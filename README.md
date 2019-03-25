@@ -8,6 +8,7 @@
 | username | 用户名称 |
 | mobile | 手机号码 |
 | age | 年龄 |
+| status | 用户状态 |
 
 - 返回实例
 
@@ -18,19 +19,19 @@ orm := sorm.NewOrm("user:password@tcp(127.0.0.1:3306)/dbname?charset=utf8").Pref
 - 查询用户ID为1的信息
 
 ```go
-orm.Fields("id,username,mobile,age").Eq("id", 1).One()
+orm.Fields("id,username,mobile,age,status").Eq("id", 1).One()
 ```
 
 - 查询用户ID小于10的用户集,并且按照Id从大到小排序
 
 ```go
-orm.RawFields("id,username,mobile,age").Lt("id", 10).Desc("id").All()
+orm.RawFields("id,username,mobile,age,status").Lt("id", 10).Desc("id").All()
 ```
 
 - 查询最近加入的前10名用户
 
 ```go
-orm.Fields("id,username,mobile,age").Limit(10).Desc("id").All()
+orm.Fields("id,username,mobile,age,status").Limit(10).Desc("id").All()
 ```
 
 - 查询年龄小于30并大于20的用户数量
@@ -39,13 +40,14 @@ orm.Fields("id,username,mobile,age").Limit(10).Desc("id").All()
 orm.Lt("age",30).Gt("age",20).Count()
 ```
 
-- 插入数据
+- 插入一条数据
 
 ```go 
 orm.Insert( map[string]interface{} {
   "username" : "meto",
   "mobile"   : "135666777XX",
-  "age"      : 20
+  "age"      : 20,
+  "status"   : 1
 })
 ```
 
@@ -61,7 +63,18 @@ orm.Where("id", 5).Update( map[string]interface{} {
 - 更新ID为5的用户的年龄
 
 ```go 
-orm.Where("id", 5).UpdateField ("age", 19)
+orm.Where(map[string]interface{}{"id":5}).UpdateField ("age", 19)
+```
+
+- 删除状态为0 且 id大于等于1000的用户 且 年龄小于18
+
+```go
+orm.Where(map[string]interface{}{
+  "status" : 0,
+  "id" : []string{"Egt", 100},
+  "age" : []string{"Lt", 18}
+}).Delete()
+```
 
 
 ##### SORM方法列表
