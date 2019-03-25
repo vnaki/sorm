@@ -13,7 +13,13 @@
 - 返回实例
 
 ```go
-orm := sorm.NewOrm("user:password@tcp(127.0.0.1:3306)/dbname?charset=utf8").Prefix("").Table("user")
+orm := sorm.NewOrm("user:password@tcp(127.0.0.1:3306)/dbname?charset=utf8")
+```
+
+- 指定数据表
+
+```go
+orm.Prefix("").Table("user")
 ```
 
 - 查询用户ID为1的信息
