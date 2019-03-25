@@ -1,3 +1,5 @@
+##### SORM方法列表
+
 |ORM方法|说明|
 |:--|:--|
 | Prefix(prefix string) *Orm | 设置数据表前缀 |
