@@ -1,5 +1,5 @@
 |ORM方法|说明|
-|:--|--|
+|:--|:--|
 | Prefix(prefix string) *Orm | 设置数据表前缀 |
 | Table(table string) *Orm | 设置数据表名称 |
 | Alias(alias string) *Orm | 设置数据表的别名 |
