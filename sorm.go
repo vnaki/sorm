@@ -57,7 +57,7 @@ var orm *Orm
  */
 func Intance(dsn string) *Orm {
 	if orm == nil {
-		orm = &orm{dsn: dsn}
+		orm = &Orm{dsn: dsn}
 		orm.connect()
 	}
 
