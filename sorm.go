@@ -112,7 +112,6 @@ func (orm *Orm) Prefix(prefix string) *Orm {
 /*
  * 指定表名称
  * 参数 table 表的名称
- * 参数 alias 表的别名
  */
 func (orm *Orm) Table(table string) *Orm {
 	orm.table = table
