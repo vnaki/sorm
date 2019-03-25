@@ -1,4 +1,4 @@
-package orm
+package sorm
 
 import (
 	"database/sql"
@@ -31,7 +31,7 @@ func RawValue(v string) Value {
 }
 
 /*资源结构*/
-type Orm struct {
+type Sorm struct {
 	dsn    string
 	db     *sql.DB
 	prefix string
@@ -50,39 +50,39 @@ type Orm struct {
 }
 
 /*实例*/
-var orm *Orm
+var sorm *Sorm
 
 /**
  * 数据库资源
  */
-func Intance(dsn string) *Orm {
-	if orm == nil {
-		orm = &Orm{dsn: dsn}
-		orm.connect()
+func Intance(dsn string) *Sorm {
+	if sorm == nil {
+		sorm = &sorm{dsn: dsn}
+		sorm.connect()
 	}
 
-	return orm
+	return sorm
 }
 
 /**
  * 判断是否已实例化
  */
 func IsInstantiated() bool {
-	return orm != nil
+	return sorm != nil
 }
 
 /**
  * 关闭数据库连接
  */
 func Close() {
-	if orm != nil {
-		orm.Close()
+	if sorm != nil {
+		sorm.Close()
 	}
 }
 
 /*连接数据库*/
-func (orm *Orm) connect() {
-	db, err := sql.Open("mysql", orm.dsn)
+func (sorm *Sorm) connect() {
+	db, err := sql.Open("mysql", sorm.dsn)
 
 	if err != nil {
 		panic(err)
@@ -91,12 +91,12 @@ func (orm *Orm) connect() {
 	/*最大空闲连接数*/
 	db.SetMaxIdleConns(5)
 	/*保存句柄*/
-	orm.db = db
+	sorm.db = db
 }
 
 /*关闭数据库连接*/
-func (orm *Orm) Close() {
-	if err := orm.db.Close(); err != nil {
+func (sorm *Sorm) Close() {
+	if err := sorm.db.Close(); err != nil {
 		panic(err)
 	}
 }
@@ -104,82 +104,83 @@ func (orm *Orm) Close() {
 /*
  * 表前缀
  */
-func (orm *Orm) Prefix(prefix string) *Orm {
-	orm.prefix = prefix
-	return orm
+func (sorm *Sorm) Prefix(prefix string) *Sorm {
+	sorm.prefix = prefix
+	return sorm
 }
 
 /*
  * 指定表名称
  * 参数 table 表的名称
+ * 参数 alias 表的别名
  */
-func (orm *Orm) Table(table string) *Orm {
-	orm.table = table
-	return orm
+func (sorm *Sorm) Table(table string) *Sorm {
+	sorm.table = table
+	return sorm
 }
 
 /*
  * 记录SQL语句
  */
-func (orm *Orm) Record() *Orm {
-	orm.record = true
-	return orm
+func (sorm *Sorm) Record() *Sorm {
+	sorm.record = true
+	return sorm
 }
 
 /**
  * 完整表名
  */
-func (orm *Orm) fullTable() string {
-	return orm.prefix + orm.table
+func (sorm *Sorm) fullTable() string {
+	return sorm.prefix + sorm.table
 }
 
 /*
  * 表的别名
  */
-func (orm *Orm) Alias(alias string) *Orm {
-	orm.alias = alias
-	return orm
+func (sorm *Sorm) Alias(alias string) *Sorm {
+	sorm.alias = alias
+	return sorm
 }
 
 /**
  * 要查询的字段(字段已处理)
  */
-func (orm *Orm) Fields(fields string) *Orm {
+func (sorm *Sorm) Fields(fields string) *Sorm {
 	if fields != "" {
 		if "*" != fields {
 			for _, field := range strings.Split(fields, ",") {
-				orm.fields = append(orm.fields, fmt.Sprintf("`%s`", strings.Join(strings.Split(field, "."), "`.`")))
+				sorm.fields = append(sorm.fields, fmt.Sprintf("`%s`", strings.Join(strings.Split(field, "."), "`.`")))
 			}
 		} else {
-			orm.fields = []string{"*"}
+			sorm.fields = []string{"*"}
 		}
 	}
 
-	return orm
+	return sorm
 }
 
 /**
  * 要查询的字段(字段未处理)
  */
-func (orm *Orm) RawFields(fields string) *Orm {
+func (sorm *Sorm) RawFields(fields string) *Sorm {
 	if fields != "" {
-		orm.fields = strings.Split(fields, ",")
+		sorm.fields = strings.Split(fields, ",")
 	}
 
-	return orm
+	return sorm
 }
 
 /**
  * 查询一条数据
  */
-func (orm *Orm) One() (map[string]string, error) {
+func (sorm *Sorm) One() (map[string]string, error) {
 
 	/*只取一条数据*/
-	if orm.limit == 0 {
-		orm.limit = 1
+	if sorm.limit == 0 {
+		sorm.limit = 1
 	}
 
-	data, err := orm.All()
+	data, err := sorm.All()
 
 	result := map[string]string{}
 
@@ -195,11 +196,11 @@ func (orm *Orm) One() (map[string]string, error) {
  * 参数 sqlstr 要执行的SQL语句
  * 参数 args 查询变量
  */
-func (orm *Orm) All() ([]map[string]string, error) {
+func (sorm *Sorm) All() ([]map[string]string, error) {
 
-	defer orm.reset()
+	defer sorm.reset()
 
-	sqlstr, err := orm.compileSelectSql()
+	sqlstr, err := sorm.compileSelectSql()
 
 	/*错误*/
 	if err != nil {
@@ -207,14 +208,14 @@ func (orm *Orm) All() ([]map[string]string, error) {
 	}
 
 	/*查询预处理*/
-	stmt, err := orm.db.Prepare(sqlstr)
+	stmt, err := sorm.db.Prepare(sqlstr)
 
 	/*错误*/
 	if err != nil {
 		return []map[string]string{}, err
 	}
 
-	rows, err := stmt.Query(orm.args...)
+	rows, err := stmt.Query(sorm.args...)
 
 	/*关闭Stmt*/
 	defer func() {
@@ -279,10 +280,10 @@ func (orm *Orm) All() ([]map[string]string, error) {
 /**
  * 统计数量
  */
-func (orm *Orm) Count() (int64, error) {
+func (sorm *Sorm) Count() (int64, error) {
 	var field string = "COUNT(*)"
 
-	result, err := orm.RawFields(field).One()
+	result, err := sorm.RawFields(field).One()
 
 	if err != nil {
 		return 0, err
@@ -304,8 +305,8 @@ func (orm *Orm) Count() (int64, error) {
  * Sum("field,...")
  * ```
  */
-func (orm *Orm) Sum(fields string) (map[string]int64, error) {
-	return orm.aggregate(fields, "SUM")
+func (sorm *Sorm) Sum(fields string) (map[string]int64, error) {
+	return sorm.aggregate(fields, "SUM")
 }
 
 /**
@@ -314,8 +315,8 @@ func (orm *Orm) Sum(fields string) (map[string]int64, error) {
  * Max("field,...")
  * ```
  */
-func (orm *Orm) Max(fields string) (map[string]int64, error) {
-	return orm.aggregate(fields, "MAX")
+func (sorm *Sorm) Max(fields string) (map[string]int64, error) {
+	return sorm.aggregate(fields, "MAX")
 }
 
 /**
@@ -324,8 +325,8 @@ func (orm *Orm) Max(fields string) (map[string]int64, error) {
  * Min("field,...")
  * ```
  */
-func (orm *Orm) Min(fields string) (map[string]int64, error) {
-	return orm.aggregate(fields, "MIN")
+func (sorm *Sorm) Min(fields string) (map[string]int64, error) {
+	return sorm.aggregate(fields, "MIN")
 }
 
 /**
@@ -334,8 +335,8 @@ func (orm *Orm) Min(fields string) (map[string]int64, error) {
  * Avg("field,...")
  * ```
  */
-func (orm *Orm) Avg(fields string) (map[string]int64, error) {
-	return orm.aggregate(fields, "AVG")
+func (sorm *Sorm) Avg(fields string) (map[string]int64, error) {
+	return sorm.aggregate(fields, "AVG")
 }
 
 /**
@@ -343,7 +344,7 @@ func (orm *Orm) Avg(fields string) (map[string]int64, error) {
  * 参数 fields 聚合字段
  * 参数 mode   函数模式 SUM/MAX/MIN/AVG
  */
-func (orm *Orm) aggregate(fields string, mode string) (map[string]int64, error) {
+func (sorm *Sorm) aggregate(fields string, mode string) (map[string]int64, error) {
 	/*切割字段*/
 	splitFields := strings.Split(fields, ",")
 	copyFields := []string{}
@@ -353,7 +354,7 @@ func (orm *Orm) aggregate(fields string, mode string) (map[string]int64, error) 
 		splitFields[index] = fmt.Sprintf("%s(`%s`)", mode, field)
 	}
 
-	sum, err := orm.RawFields(strings.Join(splitFields, ",")).One()
+	sum, err := sorm.RawFields(strings.Join(splitFields, ",")).One()
 
 	/*结果储存*/
 	var result = map[string]int64{}
@@ -386,12 +387,12 @@ func (orm *Orm) aggregate(fields string, mode string) (map[string]int64, error) 
  * 插入数据
  * 参数 data 要插入的数据
  */
-func (orm *Orm) Insert(data map[string]interface{}) (int64, error) {
+func (sorm *Sorm) Insert(data map[string]interface{}) (int64, error) {
 	/*释放参数*/
-	defer orm.reset()
+	defer sorm.reset()
 
 	/*SQL编译*/
-	sqlstr, err := orm.compileInsertSql(data)
+	sqlstr, err := sorm.compileInsertSql(data)
 
 	/*编译SQL语句错误*/
 	if err != nil {
@@ -399,13 +400,13 @@ func (orm *Orm) Insert(data map[string]interface{}) (int64, error) {
 	}
 
 	/*SQL预编译处理*/
-	stmt, err := orm.db.Prepare(sqlstr)
+	stmt, err := sorm.db.Prepare(sqlstr)
 
 	if err != nil {
 		return 0, err
 	}
 
-	result, err := stmt.Exec(orm.args...)
+	result, err := stmt.Exec(sorm.args...)
 
 	/*关闭Stmt*/
 	defer func() {
@@ -434,12 +435,12 @@ func (orm *Orm) Insert(data map[string]interface{}) (int64, error) {
  * 更新数据
  * 参数 data 要更新的数据
  */
-func (orm *Orm) Update(data map[string]interface{}) (int64, error) {
+func (sorm *Sorm) Update(data map[string]interface{}) (int64, error) {
 	/*释放参数*/
-	defer orm.reset()
+	defer sorm.reset()
 
 	/*SQL编译*/
-	sqlstr, err := orm.compileUpdateSql(data)
+	sqlstr, err := sorm.compileUpdateSql(data)
 
 	/*编译SQL语句错误*/
 	if err != nil {
@@ -447,13 +448,13 @@ func (orm *Orm) Update(data map[string]interface{}) (int64, error) {
 	}
 
 	/*SQL预编译处理*/
-	stmt, err := orm.db.Prepare(sqlstr)
+	stmt, err := sorm.db.Prepare(sqlstr)
 
 	if err != nil {
 		return 0, err
 	}
 
-	result, err := stmt.Exec(orm.args...)
+	result, err := stmt.Exec(sorm.args...)
 
 	/*关闭Stmt*/
 	defer func() {
@@ -481,43 +482,43 @@ func (orm *Orm) Update(data map[string]interface{}) (int64, error) {
 /**
  * 更新制定字段
  */
-func (orm *Orm) UpdateFiled(name string, value interface{}) (int64, error) {
-	return orm.Update(map[string]interface{}{name: value})
+func (sorm *Sorm) UpdateFiled(name string, value interface{}) (int64, error) {
+	return sorm.Update(map[string]interface{}{name: value})
 }
 
 /**
  * 值加法更新 (可以同时更新多个字段值)
  */
-func (orm *Orm) Increase(data map[string]uint64) (int64, error) {
+func (sorm *Sorm) Increase(data map[string]uint64) (int64, error) {
 	values := map[string]interface{}{}
 
 	for key, value := range data {
 		values[key] = RawValue(fmt.Sprintf("`%s`+%d", key, value))
 	}
 
-	return orm.Update(values)
+	return sorm.Update(values)
 }
 
 /**
  * 值减法更新 (可以同时更新多个字段值)
  */
-func (orm *Orm) Decrease(data map[string]uint64) (int64, error) {
+func (sorm *Sorm) Decrease(data map[string]uint64) (int64, error) {
 	values := map[string]interface{}{}
 
 	for key, value := range data {
 		values[key] = RawValue(fmt.Sprintf("`%s`-%d", key, value))
 	}
 
-	return orm.Update(values)
+	return sorm.Update(values)
 }
 
 /*删除数据*/
-func (orm *Orm) Delete() (int64, error) {
+func (sorm *Sorm) Delete() (int64, error) {
 	/*释放参数*/
-	defer orm.reset()
+	defer sorm.reset()
 
 	/*SQL编译*/
-	sqlstr, err := orm.compileDeleteSql()
+	sqlstr, err := sorm.compileDeleteSql()
 
 	/*编译SQL语句错误*/
 	if err != nil {
@@ -525,13 +526,13 @@ func (orm *Orm) Delete() (int64, error) {
 	}
 
 	/*SQL预编译处理*/
-	stmt, err := orm.db.Prepare(sqlstr)
+	stmt, err := sorm.db.Prepare(sqlstr)
 
 	if err != nil {
 		return 0, err
 	}
 
-	result, err := stmt.Exec(orm.args...)
+	result, err := stmt.Exec(sorm.args...)
 
 	/*关闭Stmt*/
 	defer func() {
@@ -559,122 +560,122 @@ func (orm *Orm) Delete() (int64, error) {
 /**
  * INNER JOIN语句
  */
-func (orm *Orm) Inner(table string, on string) *Orm {
-	orm.join(table, on, "INNER")
-	return orm
+func (sorm *Sorm) Inner(table string, on string) *Sorm {
+	sorm.join(table, on, "INNER")
+	return sorm
 }
 
 /*LEFT JOIN语句*/
-func (orm *Orm) Left(table string, on string) *Orm {
-	orm.join(table, on, "LEFT")
-	return orm
+func (sorm *Sorm) Left(table string, on string) *Sorm {
+	sorm.join(table, on, "LEFT")
+	return sorm
 }
 
 /*RIGHT JOIN语句*/
-func (orm *Orm) Right(table string, on string) *Orm {
-	orm.join(table, on, "RIGHT")
-	return orm
+func (sorm *Sorm) Right(table string, on string) *Sorm {
+	sorm.join(table, on, "RIGHT")
+	return sorm
 }
 
 /*JOIN语句*/
-func (orm *Orm) join(table string, on string, mode string) {
-	orm.joins = append(orm.joins, fmt.Sprintf("%s JOIN %s ON %s", mode, table, on))
+func (sorm *Sorm) join(table string, on string, mode string) {
+	sorm.joins = append(sorm.joins, fmt.Sprintf("%s JOIN %s ON %s", mode, table, on))
 }
 
 /*数组查询条件*/
-func (orm *Orm) Where(where map[string]interface{}) *Orm {
+func (sorm *Sorm) Where(where map[string]interface{}) *Sorm {
 	for field, unknown := range where {
 		switch value := unknown.(type) {
 		case string:
-			orm.Eq(field, value)
+			sorm.Eq(field, value)
 		case int:
-			orm.Eq(field, value)
+			sorm.Eq(field, value)
 		case int8:
-			orm.Eq(field, value)
+			sorm.Eq(field, value)
 		case int16:
-			orm.Eq(field, value)
+			sorm.Eq(field, value)
 		case int32:
-			orm.Eq(field, value)
+			sorm.Eq(field, value)
 		case int64:
-			orm.Eq(field, value)
+			sorm.Eq(field, value)
 		case []string:
 			if len(value) == 2 {
 				switch strings.ToUpper(value[0]) {
 				case "EQ":
-					orm.Eq(field, value[1])
+					sorm.Eq(field, value[1])
 				case "NEQ":
-					orm.Neq(field, value[1])
+					sorm.Neq(field, value[1])
 				case "GT":
-					orm.Gt(field, value[1])
+					sorm.Gt(field, value[1])
 				case "EGT":
-					orm.Egt(field, value[1])
+					sorm.Egt(field, value[1])
 				case "LT":
-					orm.Lt(field, value[1])
+					sorm.Lt(field, value[1])
 				case "ELT":
-					orm.Elt(field, value[1])
+					sorm.Elt(field, value[1])
 				case "LIKE":
-					orm.Like(field, value[1])
+					sorm.Like(field, value[1])
 				case "NOT LIKE":
-					orm.NotLike(field, value[1])
+					sorm.NotLike(field, value[1])
 				case "IN":
-					orm.In(field, value[1])
+					sorm.In(field, value[1])
 				case "NOT IN":
-					orm.NotIn(field, value[1])
+					sorm.NotIn(field, value[1])
 				}
 			}
 
 		}
 	}
 
-	return orm
+	return sorm
 }
 
 /*Eq查询条件*/
-func (orm *Orm) Eq(k string, v interface{}) *Orm {
-	orm.where(k, v, "=")
-	return orm
+func (sorm *Sorm) Eq(k string, v interface{}) *Sorm {
+	sorm.where(k, v, "=")
+	return sorm
 }
 
 /*NEq查询条件*/
-func (orm *Orm) Neq(k string, v interface{}) *Orm {
-	orm.where(k, v, "<>")
-	return orm
+func (sorm *Sorm) Neq(k string, v interface{}) *Sorm {
+	sorm.where(k, v, "<>")
+	return sorm
 }
 
 /*Gt查询条件*/
-func (orm *Orm) Gt(k string, v interface{}) *Orm {
-	orm.where(k, v, ">")
-	return orm
+func (sorm *Sorm) Gt(k string, v interface{}) *Sorm {
+	sorm.where(k, v, ">")
+	return sorm
 }
 
 /*EGt查询条件*/
-func (orm *Orm) Egt(k string, v interface{}) *Orm {
-	orm.where(k, v, ">=")
-	return orm
+func (sorm *Sorm) Egt(k string, v interface{}) *Sorm {
+	sorm.where(k, v, ">=")
+	return sorm
 }
 
 /*Lt查询条件*/
-func (orm *Orm) Lt(k string, v interface{}) *Orm {
-	orm.where(k, v, "<")
-	return orm
+func (sorm *Sorm) Lt(k string, v interface{}) *Sorm {
+	sorm.where(k, v, "<")
+	return sorm
 }
 
 /*ELt查询条件*/
-func (orm *Orm) Elt(k string, v interface{}) *Orm {
-	orm.where(k, v, "<=")
-	return orm
+func (sorm *Sorm) Elt(k string, v interface{}) *Sorm {
+	sorm.where(k, v, "<=")
+	return sorm
 }
 
 /*Like查询条件*/
-func (orm *Orm) Like(k string, v string) *Orm {
-	orm.where(k, string(v), "LIKE")
-	return orm
+func (sorm *Sorm) Like(k string, v string) *Sorm {
+	sorm.where(k, string(v), "LIKE")
+	return sorm
 }
 
 /*Not Like查询条件*/
-func (orm *Orm) NotLike(k string, v string) *Orm {
-	orm.where(k, string(v), "NOT LIKE")
-	return orm
+func (sorm *Sorm) NotLike(k string, v string) *Sorm {
+	sorm.where(k, string(v), "NOT LIKE")
+	return sorm
 }
 
 /**
@@ -682,18 +683,18 @@ func (orm *Orm) NotLike(k string, v string) *Orm {
  * 参数 k 参数名称
  * 参数 v 查询条件值, 如 "1,2,3,4" 或 []string{"1", "2", "3", "4"}
  */
-func (orm *Orm) In(k string, v interface{}) *Orm {
-	orm.in(k, v, "IN")
-	return orm
+func (sorm *Sorm) In(k string, v interface{}) *Sorm {
+	sorm.in(k, v, "IN")
+	return sorm
 }
 
 /**
  * NOT IN查询条件
  * 参考 In()
  */
-func (orm *Orm) NotIn(k string, v interface{}) *Orm {
-	orm.in(k, v, "NOT IN")
-	return orm
+func (sorm *Sorm) NotIn(k string, v interface{}) *Sorm {
+	sorm.in(k, v, "NOT IN")
+	return sorm
 }
 
 /**
@@ -701,22 +702,22 @@ func (orm *Orm) NotIn(k string, v interface{}) *Orm {
  * 参数 sql 要查询的SQL语句
  * 参数 args 查询参数
  */
-func (orm *Orm) WhereSql(sql string, args ...interface{}) *Orm {
+func (sorm *Sorm) WhereSql(sql string, args ...interface{}) *Sorm {
 	if sql != "" {
-		orm.wheres = append(orm.wheres, sql)
-		orm.args = append(orm.args, args...)
+		sorm.wheres = append(sorm.wheres, sql)
+		sorm.args = append(sorm.args, args...)
 	}
 
-	return orm
+	return sorm
 }
 
 /**
  * 查询分组
  * 参数 fields 分组字段
  */
-func (orm *Orm) Group(fields string) *Orm {
-	orm.group = fields
-	return orm
+func (sorm *Sorm) Group(fields string) *Sorm {
+	sorm.group = fields
+	return sorm
 }
 
 /**
@@ -724,13 +725,13 @@ func (orm *Orm) Group(fields string) *Orm {
  * 参数 having 分组条件
  * 参数 args   条件参数
  */
-func (orm *Orm) Having(having string, args ...interface{}) *Orm {
+func (sorm *Sorm) Having(having string, args ...interface{}) *Sorm {
 	if having != "" {
-		orm.having = having
-		orm.args = append(orm.args, args...)
+		sorm.having = having
+		sorm.args = append(sorm.args, args...)
 	}
 
-	return orm
+	return sorm
 }
 
 /**
@@ -738,38 +739,38 @@ func (orm *Orm) Having(having string, args ...interface{}) *Orm {
  * 参数 limit 限制条数
  * 参数 offset 偏移量
  */
-func (orm *Orm) Limit(limit int64) *Orm {
+func (sorm *Sorm) Limit(limit int64) *Sorm {
 	if limit > 0 {
-		orm.limit = limit
+		sorm.limit = limit
 	}
 
-	return orm
+	return sorm
 }
 
 /**
  * 查询偏移量
  * 参数 offset 偏移量
  */
-func (orm *Orm) Offset(offset int64) *Orm {
-	orm.offset = offset
-	return orm
+func (sorm *Sorm) Offset(offset int64) *Sorm {
+	sorm.offset = offset
+	return sorm
 }
 
 /**
  * 升序
  * 参数 colums 要排序的字段 "age,type"
  */
-func (orm *Orm) Asc(columns string) *Orm {
-	orm.order(columns, "ASC")
-	return orm
+func (sorm *Sorm) Asc(columns string) *Sorm {
+	sorm.order(columns, "ASC")
+	return sorm
 }
 
 /**
  * 降序
  */
-func (orm *Orm) Desc(columns string) *Orm {
-	orm.order(columns, "DESC")
-	return orm
+func (sorm *Sorm) Desc(columns string) *Sorm {
+	sorm.order(columns, "DESC")
+	return sorm
 }
 
 /**
@@ -777,7 +778,7 @@ func (orm *Orm) Desc(columns string) *Orm {
  * 参数 fields 要排序的字段
  * 参数 mode 排序方式 ASC OR DESC
  */
-func (orm *Orm) order(fields string, mode string) *Orm {
+func (sorm *Sorm) order(fields string, mode string) *Sorm {
 	var sort []string
 
 	for _, field := range strings.Split(fields, ",") {
@@ -785,10 +786,10 @@ func (orm *Orm) order(fields string, mode string) *Orm {
 	}
 
 	if len(sort) > 0 {
-		orm.orders = append(orm.orders, sort...)
+		sorm.orders = append(sorm.orders, sort...)
 	}
 
-	return orm
+	return sorm
 }
 
 /**
@@ -797,15 +798,15 @@ func (orm *Orm) order(fields string, mode string) *Orm {
  * 参数 v 条件值 数字或字符串
  * 参数 条件符号
  */
-func (orm *Orm) where(k string, v interface{}, s string) {
-	orm.wheres = append(orm.wheres, fmt.Sprintf("`%s` %s ?", strings.Join(strings.Split(k, "."), "`.`"), s))
-	orm.args = append(orm.args, v)
+func (sorm *Sorm) where(k string, v interface{}, s string) {
+	sorm.wheres = append(sorm.wheres, fmt.Sprintf("`%s` %s ?", strings.Join(strings.Split(k, "."), "`.`"), s))
+	sorm.args = append(sorm.args, v)
 }
 
 /**
  * in 查询处理 (私有方法)
  */
-func (orm *Orm) in(k string, in interface{}, symbol string) {
+func (sorm *Sorm) in(k string, in interface{}, symbol string) {
 	var set []interface{}
 
 	switch value := in.(type) {
@@ -821,76 +822,76 @@ func (orm *Orm) in(k string, in interface{}, symbol string) {
 
 	/*有效参数*/
 	if len(set) < 1 {
-		orm.args = append(orm.args, set...)
-		orm.wheres = append(orm.wheres, fmt.Sprintf("`%s` %s (%s)", strings.Join(strings.Split(k, "."), "`.`"), symbol, strings.TrimRight(strings.Repeat("?,", len(set)), ",")))
+		sorm.args = append(sorm.args, set...)
+		sorm.wheres = append(sorm.wheres, fmt.Sprintf("`%s` %s (%s)", strings.Join(strings.Split(k, "."), "`.`"), symbol, strings.TrimRight(strings.Repeat("?,", len(set)), ",")))
 	}
 }
 
 /**
  * 编译查询
  */
-func (orm *Orm) compileSelectSql() (string, error) {
+func (sorm *Sorm) compileSelectSql() (string, error) {
 	sqlstr := "SELECT "
 
-	if len(orm.fields) < 1 {
+	if len(sorm.fields) < 1 {
 		return "", errors.New("select field cannot be empty")
 	}
 
 	/*查询字段*/
-	sqlstr += strings.Join(orm.fields, ",")
+	sqlstr += strings.Join(sorm.fields, ",")
 
-	if orm.table == "" {
+	if sorm.table == "" {
 		return "", errors.New("table cannot be empty")
 	}
 
-	sqlstr += fmt.Sprintf(" FROM `%s`", orm.fullTable())
+	sqlstr += fmt.Sprintf(" FROM `%s`", sorm.fullTable())
 
 	/*表的别名*/
-	if orm.alias != "" {
-		sqlstr += fmt.Sprintf(" `%s`", orm.alias)
+	if sorm.alias != "" {
+		sqlstr += fmt.Sprintf(" `%s`", sorm.alias)
 	}
 
 	/*JOIN*/
-	if len(orm.joins) > 0 {
-		sqlstr += " " + strings.Join(orm.joins, " ")
+	if len(sorm.joins) > 0 {
+		sqlstr += " " + strings.Join(sorm.joins, " ")
 	}
 
 	/*WHERE*/
 	sqlstr += " WHERE "
 
-	if len(orm.wheres) > 0 {
-		sqlstr += strings.Join(orm.wheres, " AND ")
+	if len(sorm.wheres) > 0 {
+		sqlstr += strings.Join(sorm.wheres, " AND ")
 	} else {
 		sqlstr += "1=1"
 	}
 
 	/*GROUP BY*/
-	if orm.group != "" {
-		sqlstr += " GROUP BY " + orm.group
+	if sorm.group != "" {
+		sqlstr += " GROUP BY " + sorm.group
 
 		/*HAVING*/
-		if orm.group != "" {
-			sqlstr += " HAVING " + orm.having
+		if sorm.group != "" {
+			sqlstr += " HAVING " + sorm.having
 		}
 	}
 
 	/*ORDER BY*/
-	if len(orm.orders) > 0 {
-		sqlstr += " ORDER BY " + strings.Join(orm.orders, ",")
+	if len(sorm.orders) > 0 {
+		sqlstr += " ORDER BY " + strings.Join(sorm.orders, ",")
 	}
 
 	/*LIMIT OFFSET*/
 	sqlstr += " LIMIT "
 
-	if orm.limit > 0 {
-		sqlstr += fmt.Sprintf("%d OFFSET %d", orm.limit, orm.offset)
+	if sorm.limit > 0 {
+		sqlstr += fmt.Sprintf("%d OFFSET %d", sorm.limit, sorm.offset)
 	} else {
-		sqlstr += fmt.Sprintf("%d,100", orm.offset)
+		sqlstr += fmt.Sprintf("%d,100", sorm.offset)
 	}
 
 	/*记录SQL*/
-	if orm.record == true {
-		UsedSql = append(UsedSql, fmt.Sprintf(strings.Replace(sqlstr, "?", "%v", -1), orm.args...))
+	if sorm.record == true {
+		UsedSql = append(UsedSql, fmt.Sprintf(strings.Replace(sqlstr, "?", "%v", -1), sorm.args...))
 	}
 
 	return sqlstr, nil
@@ -899,9 +900,9 @@ func (orm *Orm) compileSelectSql() (string, error) {
 /**
  * 编译更新条件
  */
-func (orm *Orm) compileUpdateCondition() string {
-	if len(orm.wheres) > 0 {
-		return " WHERE " + strings.Join(orm.wheres, " AND ")
+func (sorm *Sorm) compileUpdateCondition() string {
+	if len(sorm.wheres) > 0 {
+		return " WHERE " + strings.Join(sorm.wheres, " AND ")
 	}
 
 	return ""
@@ -910,23 +911,23 @@ func (orm *Orm) compileUpdateCondition() string {
 /**
  * 编译删除条件
  */
-func (orm *Orm) compileDeleteCondition() string {
+func (sorm *Sorm) compileDeleteCondition() string {
 	compile := " WHERE "
 
-	if len(orm.wheres) > 0 {
-		compile += strings.Join(orm.wheres, " AND ")
+	if len(sorm.wheres) > 0 {
+		compile += strings.Join(sorm.wheres, " AND ")
 	} else {
 		compile += "1=1"
 	}
 
 	/*ORDER BY*/
-	if len(orm.orders) > 0 {
-		compile += " ORDER BY " + strings.Join(orm.orders, ",")
+	if len(sorm.orders) > 0 {
+		compile += " ORDER BY " + strings.Join(sorm.orders, ",")
 	}
 
 	/*LIMIT*/
-	if orm.limit > 0 {
-		compile += fmt.Sprintf(" LIMIT %d", orm.limit)
+	if sorm.limit > 0 {
+		compile += fmt.Sprintf(" LIMIT %d", sorm.limit)
 	}
 
 	return compile
@@ -935,12 +936,12 @@ func (orm *Orm) compileDeleteCondition() string {
 /**
  * 编译INSERT语句
  */
-func (orm *Orm) compileInsertSql(data map[string]interface{}) (string, error) {
+func (sorm *Sorm) compileInsertSql(data map[string]interface{}) (string, error) {
 	if len(data) < 1 {
 		return "", errors.New("cannot insert empty data")
 	}
 
-	if orm.table == "" {
+	if sorm.table == "" {
 		return "", errors.New("table cannot be empty")
 	}
 
@@ -950,14 +951,14 @@ func (orm *Orm) compileInsertSql(data map[string]interface{}) (string, error) {
 		keys = append(keys, "`"+key+"`")
 		values = append(values, "?")
 		/*填充参数*/
-		orm.args = append(orm.args, value)
+		sorm.args = append(sorm.args, value)
 	}
 
-	sqlstr := fmt.Sprintf("INSERT INTO `%s` (%s) VALUE (%s)", orm.fullTable(), strings.Join(keys, ","), strings.Join(values, ","))
+	sqlstr := fmt.Sprintf("INSERT INTO `%s` (%s) VALUE (%s)", sorm.fullTable(), strings.Join(keys, ","), strings.Join(values, ","))
 
 	/*记录SQL*/
-	if orm.record == true {
-		UsedSql = append(UsedSql, fmt.Sprintf(strings.Replace(sqlstr, "?", "%v", -1), orm.args...))
+	if sorm.record == true {
+		UsedSql = append(UsedSql, fmt.Sprintf(strings.Replace(sqlstr, "?", "%v", -1), sorm.args...))
 	}
 
 	return sqlstr, nil
@@ -966,12 +967,12 @@ func (orm *Orm) compileInsertSql(data map[string]interface{}) (string, error) {
 /**
  * 编译Update语句
  */
-func (orm *Orm) compileUpdateSql(data map[string]interface{}) (string, error) {
+func (sorm *Sorm) compileUpdateSql(data map[string]interface{}) (string, error) {
 	if len(data) < 1 {
 		return "", errors.New("cannot update empty data")
 	}
 
-	if orm.table == "" {
+	if sorm.table == "" {
 		return "", errors.New("table cannot be empty")
 	}
 
@@ -989,13 +990,13 @@ func (orm *Orm) compileUpdateSql(data map[string]interface{}) (string, error) {
 	}
 
 	/*合并参数*/
-	orm.args = append(args, orm.args...)
+	sorm.args = append(args, sorm.args...)
 
-	sqlstr := fmt.Sprintf("UPDATE `%s` SET %s%s", orm.fullTable(), strings.Join(set, ","), orm.compileUpdateCondition())
+	sqlstr := fmt.Sprintf("UPDATE `%s` SET %s%s", sorm.fullTable(), strings.Join(set, ","), sorm.compileUpdateCondition())
 
 	/*记录SQL*/
-	if orm.record == true {
-		UsedSql = append(UsedSql, fmt.Sprintf(strings.Replace(sqlstr, "?", "%v", -1), orm.args...))
+	if sorm.record == true {
+		UsedSql = append(UsedSql, fmt.Sprintf(strings.Replace(sqlstr, "?", "%v", -1), sorm.args...))
 	}
 
 	return sqlstr, nil
@@ -1004,16 +1005,16 @@ func (orm *Orm) compileUpdateSql(data map[string]interface{}) (string, error) {
 /**
  * 编译Delete语句
  */
-func (orm *Orm) compileDeleteSql() (string, error) {
-	if orm.table == "" {
+func (sorm *Sorm) compileDeleteSql() (string, error) {
+	if sorm.table == "" {
 		return "", errors.New("table cannot be empty")
 	}
 
-	sqlstr := fmt.Sprintf("DELETE FROM `%s`%s", orm.fullTable(), orm.compileDeleteCondition())
+	sqlstr := fmt.Sprintf("DELETE FROM `%s`%s", sorm.fullTable(), sorm.compileDeleteCondition())
 
 	/*记录SQL*/
-	if orm.record == true {
-		UsedSql = append(UsedSql, fmt.Sprintf(strings.Replace(sqlstr, "?", "%v", -1), orm.args...))
+	if sorm.record == true {
+		UsedSql = append(UsedSql, fmt.Sprintf(strings.Replace(sqlstr, "?", "%v", -1), sorm.args...))
 	}
 
 	return sqlstr, nil
@@ -1022,18 +1023,18 @@ func (orm *Orm) compileDeleteSql() (string, error) {
 /**
  * 重置查询
  */
-func (orm *Orm) reset() {
-	orm.prefix = ""
-	orm.table = ""
-	orm.alias = ""
-	orm.group = ""
-	orm.having = ""
-	orm.limit = 0
-	orm.offset = 0
-	orm.record = false
-	orm.fields = []string{}
-	orm.wheres = []string{}
-	orm.joins = []string{}
-	orm.orders = []string{}
-	orm.args = []interface{}{}
+func (sorm *Sorm) reset() {
+	sorm.prefix = ""
+	sorm.table = ""
+	sorm.alias = ""
+	sorm.group = ""
+	sorm.having = ""
+	sorm.limit = 0
+	sorm.offset = 0
+	sorm.record = false
+	sorm.fields = []string{}
+	sorm.wheres = []string{}
+	sorm.joins = []string{}
+	sorm.orders = []string{}
+	sorm.args = []interface{}{}
 }
