@@ -60,7 +60,7 @@ orm.Insert( map[string]interface{} {
 - 更新ID为5的用户名称和年龄
 
 ```go 
-orm.Where("id", 5).Update( map[string]interface{} {
+orm.Eq("id", 5).Update( map[string]interface{} {
   "username" : "meye",
   "age"      : 21
 })
