@@ -55,7 +55,7 @@ var sorm *Sorm
 /**
  * 数据库资源
  */
-func Intance(dsn string) *Sorm {
+func NewOrm(dsn string) *Sorm {
 	if sorm == nil {
 		sorm = &sorm{dsn: dsn}
 		sorm.connect()
