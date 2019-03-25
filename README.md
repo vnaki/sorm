@@ -1,3 +1,69 @@
+##### 使用例子
+
+如果一张用户表User,结构如下:
+
+| 字段名 | 注释 |
+| -- | -- |
+| id | 用户ID |
+| username | 用户名称 |
+| mobile | 手机号码 |
+| age | 年龄 |
+
+- 返回实例
+
+```go
+orm := sorm.NewOrm("user:password@tcp(127.0.0.1:3306)/dbname?charset=utf8").Prefix("").Table("user")
+```
+
+- 查询用户ID为1的信息
+
+```go
+orm.Fields("id,username,mobile,age").Eq("id", 1).One()
+```
+
+- 查询用户ID小于10的用户集,并且按照Id从大到小排序
+
+```go
+orm.Fields("id,username,mobile,age").Lt("id", 10).Desc("id").All()
+```
+
+- 查询最近加入的前10名用户
+
+```go
+orm.Fields("id,username,mobile,age").Limit(10).Desc("id").All()
+```
+
+- 查询年龄小于30并大于20的用户数量
+
+```go
+orm.Lt("age",30).Gt("age",20).Count()
+```
+
+- 插入数据
+
+```go 
+orm.Insert( map[string]interface{} {
+  "username" : "meto",
+  "mobile"   : "135666777XX",
+  "age"      : 20
+})
+```
+
+- 更新ID为5的用户名称和年龄
+
+```go 
+orm.Where("id", 5).Update( map[string]interface{} {
+  "username" : "meye",
+  "age"      : 21
+})
+```
+
+- 更新ID为5的用户的年龄
+
+```go 
+orm.Where("id", 5).UpdateField ("age", 19)
+
+
 ##### SORM方法列表
 
 |ORM方法|说明|
