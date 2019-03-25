@@ -24,7 +24,7 @@ orm.Fields("id,username,mobile,age").Eq("id", 1).One()
 - 查询用户ID小于10的用户集,并且按照Id从大到小排序
 
 ```go
-orm.Fields("id,username,mobile,age").Lt("id", 10).Desc("id").All()
+orm.RawFields("id,username,mobile,age").Lt("id", 10).Desc("id").All()
 ```
 
 - 查询最近加入的前10名用户
